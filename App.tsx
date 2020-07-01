@@ -1,13 +1,35 @@
 import React, {MutableRefObject, useCallback, useEffect, useRef, useMemo, useState} from 'react';
-import {Animated, Easing, StyleSheet, TouchableOpacity as ButtonPressAnimation, Text} from 'react-native';
+import {
+    Animated,
+    Easing,
+    StyleSheet,
+    TouchableWithoutFeedback as ButtonPressAnimation,
+    Text, View,
+} from 'react-native';
 import Reanimated, {
     Clock,
     Easing as REasing,
     Value as RValue,
     timing,
 } from 'react-native-reanimated';
-// @ts-ignore
 import styled from 'styled-components/native';
+import * as Notifications from 'expo-notifications';
+import firebase from "firebase";
+import 'firebase/firestore'
+import {decode, encode} from 'base-64'
+import {firebaseConfig} from './firebaseConfig'
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore()
+
+if (! global.btoa) {
+    global.btoa = encode
+}
+
+if (! global.atob) {
+    global.atob = decode
+}
+
 
 const {
     and,
@@ -23,7 +45,16 @@ const {
     startClock,
 } = Reanimated;
 
-const emojis = ["🥰", "😍", "😇", "😎", "😬", "👨🏻‍💻", "🙆‍", "️👨", "‍❤️", "‍💋", "‍👨", "👬", "🐙", "🌈", "❤️", "🧡", "💛", "💚", "💙", "🤎", "💗", "🤍", "❣️", "💕", "💞", "💖", "💝", "💘", "♥️", "‍🌈", "", "", "", ""]
+const emojis = ["🥰", "😍", "😇", "😎", "😬", "👨🏻‍💻", "🙆‍", "️👨", "‍❤️", "‍💋", "‍👨", "👬", "🐙", "🌈", "❤️", "🧡", "💛", "💚", "💙", "🤎", "💗", "🤍", "❣️", "💕", "💞", "💖", "💝", "💘", "♥️", "‍🌈"]
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+    }),
+});
+
 
 const addUnitToNumberValues = (value: number) => value ? `${value}px` : value;
 
@@ -41,7 +72,7 @@ const build = (
 `;
 
 const ButtonContainer = styled(Reanimated.View)`
-  border-radius: ${({height}) => height / 2};
+  border-radius: ${({height}) => height / 2}px;
 `;
 
 const ButtonContent = styled.View.attrs({
@@ -51,16 +82,10 @@ const ButtonContent = styled.View.attrs({
   justify-content: center
   align-self: center;
   height: 100%;
-  padding-bottom: 4;
+  padding-bottom: 4px;
 `;
 
-const ButtonLabel = styled(Text).attrs(
-    ({textColor: color = '#25292E'}) => ({
-        align: 'center',
-        color,
-        weight: 'bold',
-    })
-)`
+const ButtonLabel = styled(Text)`
   font-size: 40px;
 
 `;
@@ -69,26 +94,26 @@ const ButtonLabel = styled(Text).attrs(
 const DarkShadow = styled(Reanimated.View)`
   ${build(0, 10, 30, '#25292E', 1)};
   background-color: white;
-  border-radius: 50;
-  height: 100;
-  left: -3;
+  border-radius: 50px;
+  height: 100px;
+  left: -3px;
   opacity: 0.2;
   position: absolute;
-  top: -3;
-  width: 106;
+  top: -3px;
+  width: 106px;
 `;
 
 const Shadow = styled(Reanimated.View)`
   ${build(0, 5, 15, '#25292E', 0.4)};
-  border-radius: 50;
-  height: 100;
-  left: -3;
+  border-radius: 50px;
+  height: 100px;
+  left: -3px;
   position: absolute;
-  top: -3;
-  width: 106;
+  top: -3px;
+  width: 106px;
 `;
 
-const RainbowButton = ({
+const PrettyButton = ({
                            darkShadowStyle,
                            height,
                            onPress,
@@ -96,16 +121,26 @@ const RainbowButton = ({
                            shadowStyle,
                            style,
                            textColor,
-                       }: any) => {
+                       }: {
+    darkShadowStyle: any,
+    height: number,
+    onPress: () => void,
+    onPressIn: () => void,
+    shadowStyle: any,
+    style: any,
+    textColor: any
+}) => {
     return (
         <ButtonPressAnimation onPress={onPress} onPressIn={onPressIn}>
-            <DarkShadow style={darkShadowStyle}/>
-            <Shadow style={shadowStyle}/>
-            <ButtonContainer height={height} style={style}>
-                <ButtonContent>
-                    <ButtonLabel textColor={textColor}>❤</ButtonLabel>
-                </ButtonContent>
-            </ButtonContainer>
+            <View>
+                <DarkShadow style={darkShadowStyle}/>
+                <Shadow style={shadowStyle}/>
+                <ButtonContainer height={height} style={style}>
+                    <ButtonContent>
+                        <ButtonLabel textColor={textColor}>❤</ButtonLabel>
+                    </ButtonContent>
+                </ButtonContainer>
+            </View>
         </ButtonPressAnimation>
     );
 };
@@ -119,9 +154,9 @@ const Container = styled.View`
 
 const ContentWrapper = styled(Animated.View)`
   align-items: center;
-  height: 192;
+  height: 192px;
   justify-content: space-between;
-  margin-bottom: 20;
+  margin-bottom: 20px;
   z-index: 10;
 `;
 
@@ -296,9 +331,9 @@ const traversedRainbows = rainbows.map(
 );
 
 const RainbowImage = styled(Animated.View)`
-  height: ${INITIAL_SIZE};
+  height: ${INITIAL_SIZE}px;
   position: absolute;
-  width: ${INITIAL_SIZE};
+  width: ${INITIAL_SIZE}px;
 `;
 
 function runTiming(value: RValue<number>) {
@@ -366,6 +401,11 @@ function selectRandomEmojis() {
     return selectedEmojis
 }
 
+async function getTokens() {
+    const tokens = await db.collection("tokes").get()
+    return tokens.docs.map(t => t.data().token).filter(Boolean)
+}
+
 function colorAnimation(rValue: MutableRefObject<RValue<any>>, fromShadow: boolean) {
     const animation = runTiming(rValue.current);
     const r = interpolate(animation, {
@@ -398,6 +438,24 @@ export default function App() {
         };
     }, [contentAnimation, createWalletButtonAnimation]);
 
+    const myToken = useRef<string>()
+    // @ts-ignore
+    useEffect(() => {
+        Notifications.getPermissionsAsync()
+
+        async function register() {
+            const tokens = await getTokens()
+            const {data: token} = await Notifications.getExpoPushTokenAsync();
+            myToken.current = token
+            if (! tokens.includes(token)) {
+                await db.collection('tokes').add({token});
+            }
+        }
+
+        register()
+
+    }, [])
+
     const buttonStyle = useMemo(
         () => ({
             transform: [{scale: createWalletButtonAnimation.current}],
@@ -427,6 +485,29 @@ export default function App() {
             emoji: 'european_castle',
             height: 94,
             onPress: () => {
+
+                async function performSending() {
+                    const tokens = (await getTokens()).filter(t => t === myToken.current)
+                    const message = tokens.map(t => ({
+                        to: t,
+                        sound: 'default',
+                        title: '<3',
+                        body: '❤️🧡💛💚💙!',
+                    }));
+                    fetch('https://exp.host/--/api/v2/push/send', {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                            'Accept-encoding': 'gzip, deflate',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(message),
+                    });
+                }
+
+                performSending()
+
+
                 setSelectedEmojis(selectRandomEmojis)
                 Animated.parallel([
                     ...traversedRainbows.map(({value, delay = 0}) =>
@@ -495,7 +576,7 @@ export default function App() {
             <ContentWrapper style={contentStyle}>
 
                 <ButtonWrapper style={buttonStyle}>
-                    <RainbowButton {...createWalletButtonProps} />
+                    <PrettyButton {...createWalletButtonProps} />
                 </ButtonWrapper>
             </ContentWrapper>
         </Container>
