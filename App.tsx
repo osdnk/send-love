@@ -487,7 +487,7 @@ export default function App() {
             onPress: () => {
 
                 async function performSending() {
-                    const tokens = (await getTokens()).filter(t => t === myToken.current)
+                    const tokens = (await getTokens()).filter(t => t !== myToken.current)
                     const message = tokens.map(t => ({
                         to: t,
                         sound: 'default',
