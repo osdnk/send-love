@@ -17,10 +17,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "send-love.osdnk"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "android": {
+      "package": "send-love.osdnk"
+    },
+    "entryPoint": "node_modules/expo/AppEntry.js"
   }
 }
